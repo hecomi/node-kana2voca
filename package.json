@@ -1,0 +1,20 @@
+{
+	"name" : "kana2voca",
+	"version" : "0.0.1",
+	"author" : {
+		"name" : "hecomi",
+		"email" : "info@hecomi.com"
+	},
+	"main" : "kana2voca",
+	"dependencies" : {},
+	"readmeFilename" : "README.md",
+	"description" : "Katakana to Julius voca format converter",
+	"repository" : {
+		"type" : "git",
+		"url"  : "http://github.com/hecomi/node-voca.git"
+	},
+	"bugs" : {
+		"mail" : "info@hecomi.com",
+		"web"  : "http://github.com/hecomi/node-voca/issues"
+	}
+}
