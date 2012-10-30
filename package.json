@@ -11,10 +11,10 @@
 	"description" : "Katakana to Julius voca format converter",
 	"repository" : {
 		"type" : "git",
-		"url"  : "http://github.com/hecomi/node-voca.git"
+		"url"  : "https://github.com/hecomi/node-kana2voca.git"
 	},
 	"bugs" : {
 		"mail" : "info@hecomi.com",
-		"web"  : "http://github.com/hecomi/node-voca/issues"
+		"web"  : "http://github.com/hecomi/node-kana2voca/issues"
 	}
 }
