@@ -11,4 +11,7 @@ if ( fs.existsSync( path.join(__dirname, './build/Debug') ) ) {
 	throw '"kana2voca" has not been compiled yet.'
 }
 
-module.exports = addon.kana2voca;
+module.exports = {
+	async : addon.kana2voca,
+	sync  : addon.kana2vocaSync
+};

@@ -21,11 +21,18 @@ struct kana2voca_baton
 };
 
 // ICU でカタカナをローマ字に変換してから
-// 音声認識エンジン Julius の voca ファイル形式に変換するクラス
+// 音声認識エンジン Julius の voca ファイル形式に変換するクラス（非同期版）
 // (e.g. イースタートー --> i: s u t a: t o:)
 Handle<Value> kana2voca(const Arguments& args)
 {
 	HandleScope scope;
+
+	// 引数が文字列かどうかチェック
+	if (!args[0]->IsString()) {
+		Local<String> msg = String::New("[MeCab] Error! The 1st argument of 'parse' must be String.");
+		ThrowException(Exception::TypeError(msg));
+		return scope.Close(Undefined());
+	}
 
 	// 非同期処理に必要なデータの成形
 	String::Utf8Value str(args[0]);
@@ -119,9 +126,78 @@ Handle<Value> kana2voca(const Arguments& args)
 	return scope.Close( Undefined() );
 };
 
+// ICU でカタカナをローマ字に変換してから
+// 音声認識エンジン Julius の voca ファイル形式に変換するクラス（同期版）
+// (e.g. イースタートー --> i: s u t a: t o:)
+Handle<Value> kana2voca_sync(const Arguments& args)
+{
+	HandleScope scope;
+
+	// 引数が文字列かどうかチェック
+	if (!args[0]->IsString()) {
+		Local<String> msg = String::New("[MeCab] Error! The 1st argument of 'parse' must be String.");
+		ThrowException( Exception::TypeError(msg) );
+		return scope.Close( Undefined() );
+	}
+	String::Utf8Value str(args[0]);
+
+	UnicodeString input = *str;
+
+	// 「ン」をマーキング
+	input.findAndReplace("ン", "[[ン]]");
+
+	// カタカナ --> Latin 変換
+	auto error = U_ZERO_ERROR;
+	std::shared_ptr<Transliterator> t(
+		Transliterator::createInstance("Katakana-Latin", UTRANS_FORWARD, error)
+	);
+	t->transliterate(input);
+	if (error != U_ZERO_ERROR) {
+		string err = std::string("[kana2voca] Error! Code: ") + std::to_string(error);
+		Local<String> msg = String::New( err.c_str() );
+		ThrowException( Exception::TypeError(msg) );
+		return scope.Close( Undefined() );
+	}
+
+	// 伸ばす音の表記変更 + マーキングしたンをNにする + 「つ」を「q」にする
+	std::map<UnicodeString, UnicodeString> long_map = {
+		{"\u0101" , "a:"},
+		{"\u0113" , "e:"},
+		{"\u012B" , "i:"},
+		{"\u014D" , "o:"},
+		{"\u016B" , "u:"},
+		{"[[n]]"  , "N" },
+		{"~"      , "q" }
+	};
+	for (const auto& x : long_map) {
+		input.findAndReplace(x.first, x.second);
+	}
+
+	// 変換結果取得
+	size_t length = input.length();
+	char* romaji  = new char[length + 1];
+	input.extract(0, length, romaji, "utf8");
+
+	// Julius の voca 形式へ整形
+	std::string result(romaji);
+	std::map<std::string, std::string> regex_map = {
+		{"[aiueoNq]:?"     , "$0 "},
+		{"[^aiueoNq]{1,2}" , "$0 "},
+		{"[^a-zN:@]"       , ""   },
+		{"\\s+"            , " "  },
+	};
+	for (const auto& x : regex_map) {
+		std::regex r(x.first);
+		result = std::regex_replace(result, r, x.second);
+	}
+
+	return scope.Close( String::New(result.c_str()) );
+};
+
 void init(Handle<Object> target) {
 	assert( uv_mutex_init(&m) == 0 );
 	NODE_SET_METHOD(target, "kana2voca", kana2voca);
+	NODE_SET_METHOD(target, "kana2vocaSync", kana2voca_sync);
 }
 
 NODE_MODULE(kana2voca, init)

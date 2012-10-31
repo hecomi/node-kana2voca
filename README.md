@@ -16,7 +16,7 @@ C++0x 対応のコンパイラが必要です。
 使い方
 --------------
 ```javascript
-var kana2voca = require('kana2voca');
+var kana2voca = require('kana2voca').async;
 
 kana2voca('キョーハイーテンキダナー', function(err, result) {
 	console.log(result);
@@ -26,6 +26,8 @@ kana2voca('キョーハイーテンキダナー', function(err, result) {
 これで次のような出力となります。
 
 	ky o: h a i: t e N k i d a n a:
+
+require 時の語尾を async から sync に変えると同期版になります。
 
 連携
 --------------
