@@ -1,7 +1,10 @@
+#define BOOST_NO_EXCEPTIONS
+
+#include <iostream>
 #include <string>
 #include <map>
 #include <memory>
-#include <regex>
+#include <boost/regex.hpp>
 #include <unicode/translit.h>
 #include <node.h>
 
@@ -10,6 +13,14 @@ using namespace v8;
 using namespace node;
 
 static uv_mutex_t m;
+
+// 例外を投げないようにする
+namespace boost {
+	void throw_exception(std::exception const & e)
+	{
+		return;
+	}
+}
 
 // 非同期処理でやり取りするデータ
 struct kana2voca_baton
@@ -94,11 +105,12 @@ Handle<Value> kana2voca(const Arguments& args)
 				{"\\s+"            , " "  },
 			};
 			for (const auto& x : regex_map) {
-				std::regex r(x.first);
-				result = std::regex_replace(result, r, x.second);
+				boost::regex r(x.first);
+				result = boost::regex_replace(result, r, x.second);
 			}
 			data->result = result;
 
+			delete romaji;
 			uv_mutex_unlock(&m);
 		},
 		[](uv_work_t* req) {
@@ -140,7 +152,6 @@ Handle<Value> kana2voca_sync(const Arguments& args)
 		return scope.Close( Undefined() );
 	}
 	String::Utf8Value str(args[0]);
-
 	UnicodeString input = *str;
 
 	// 「ン」をマーキング
@@ -181,16 +192,17 @@ Handle<Value> kana2voca_sync(const Arguments& args)
 	// Julius の voca 形式へ整形
 	std::string result(romaji);
 	std::map<std::string, std::string> regex_map = {
-		{"[aiueoNq]:?"     , "$0 "},
-		{"[^aiueoNq]{1,2}" , "$0 "},
-		{"[^a-zN:@]"       , ""   },
+		{"\[aiueoNq]:?"     , "$0 "},
+		{"\[^aiueoNq]{1,2}" , "$0 "},
+		{"\[^a-zN:@]"       , ""   },
 		{"\\s+"            , " "  },
 	};
 	for (const auto& x : regex_map) {
-		std::regex r(x.first);
-		result = std::regex_replace(result, r, x.second);
+		boost::regex r(x.first);
+		result = boost::regex_replace(result, r, x.second, boost::format_all);
 	}
 
+	delete romaji;
 	return scope.Close( String::New(result.c_str()) );
 };
 
