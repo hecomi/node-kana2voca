@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <vector>
 #include <memory>
 #include <boost/regex.hpp>
 #include <unicode/translit.h>
@@ -68,9 +69,7 @@ Handle<Value> kana2voca(const Arguments& args)
 
 			// カタカナ --> Latin 変換
 			auto error = U_ZERO_ERROR;
-			std::shared_ptr<Transliterator> t(
-				Transliterator::createInstance("Katakana-Latin", UTRANS_FORWARD, error)
-			);
+			auto t     = Transliterator::createInstance("Katakana-Latin", UTRANS_FORWARD, error);
 			t->transliterate(input);
 			if (error != U_ZERO_ERROR) {
 				data->err = std::string("[kana2voca] Error! Code: ") + std::to_string(error);
@@ -92,12 +91,11 @@ Handle<Value> kana2voca(const Arguments& args)
 			}
 
 			// 変換結果取得
-			size_t length = input.length();
-			char* romaji  = new char[length + 1];
-			input.extract(0, length, romaji, "utf8");
+			std::vector<char> romaji( input.length() );
+			input.extract(0, input.length(), &romaji[0], "utf8");
 
 			// Julius の voca 形式へ整形
-			std::string result(romaji);
+			std::string result(romaji.begin(), romaji.end());
 			std::map<std::string, std::string> regex_map = {
 				{"[aiueoNq]:?"     , "$0 "},
 				{"[^aiueoNq]{1,2}" , "$0 "},
@@ -106,11 +104,10 @@ Handle<Value> kana2voca(const Arguments& args)
 			};
 			for (const auto& x : regex_map) {
 				boost::regex r(x.first);
-				result = boost::regex_replace(result, r, x.second);
+				result = boost::regex_replace(result, r, x.second, boost::match_default | boost::format_all);
 			}
 			data->result = result;
 
-			delete romaji;
 			uv_mutex_unlock(&m);
 		},
 		[](uv_work_t* req) {
@@ -159,9 +156,8 @@ Handle<Value> kana2voca_sync(const Arguments& args)
 
 	// カタカナ --> Latin 変換
 	auto error = U_ZERO_ERROR;
-	std::shared_ptr<Transliterator> t(
-		Transliterator::createInstance("Katakana-Latin", UTRANS_FORWARD, error)
-	);
+	auto t = Transliterator::createInstance("Katakana-Latin", UTRANS_FORWARD, error);
+
 	t->transliterate(input);
 	if (error != U_ZERO_ERROR) {
 		string err = std::string("[kana2voca] Error! Code: ") + std::to_string(error);
@@ -185,24 +181,22 @@ Handle<Value> kana2voca_sync(const Arguments& args)
 	}
 
 	// 変換結果取得
-	size_t length = input.length();
-	char* romaji  = new char[length + 1];
-	input.extract(0, length, romaji, "utf8");
+	std::vector<char> romaji( input.length() );
+	input.extract(0, input.length(), &romaji[0], "utf8");
 
 	// Julius の voca 形式へ整形
-	std::string result(romaji);
+	std::string result(romaji.begin(), romaji.end());
 	std::map<std::string, std::string> regex_map = {
-		{"\[aiueoNq]:?"     , "$0 "},
-		{"\[^aiueoNq]{1,2}" , "$0 "},
-		{"\[^a-zN:@]"       , ""   },
+		{"[aiueoNq]:?"     , "$0 "},
+		{"[^aiueoNq]{1,2}" , "$0 "},
+		{"[^a-zN:@]"       , ""   },
 		{"\\s+"            , " "  },
 	};
 	for (const auto& x : regex_map) {
 		boost::regex r(x.first);
-		result = boost::regex_replace(result, r, x.second, boost::format_all);
+		result = boost::regex_replace(result, r, x.second, boost::match_default | boost::format_all);
 	}
 
-	delete romaji;
 	return scope.Close( String::New(result.c_str()) );
 };
 

@@ -3,7 +3,7 @@
 		'target_name' : 'kana2voca',
 		'sources'     : [ 'kana2voca.cc' ],
 		'cflags'      : [ '-std=c++0x' ],
-		'libraries'   : [ '-licuuc -licui18n' ],
+		'libraries'   : [ '-licuuc -licui18n -lboost_regex' ],
 		'conditions'  : [
 			['OS=="mac"', {
 				'include_dirs' : [
