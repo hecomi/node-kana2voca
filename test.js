@@ -1,4 +1,4 @@
-var kana2voca = require('kana2voca');
+var kana2voca = require('./kana2voca');
 
 // 非同期版
 kana2voca.async('キョーハイーテンキダナー', function(err, result) {

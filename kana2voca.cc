@@ -97,14 +97,19 @@ Handle<Value> kana2voca(const Arguments& args)
 			// Julius の voca 形式へ整形
 			std::string result(romaji.begin(), romaji.end());
 			std::map<std::string, std::string> regex_map = {
-				{"[aiueoNq]:?"     , "$0 "},
-				{"[^aiueoNq]{1,2}" , "$0 "},
-				{"[^a-zN:@]"       , ""   },
-				{"\\s+"            , " "  },
+				{"[aiueoNq]:?" , "$0 "},
+				{"[^aiueoNq]+" , "$0 "},
+				{"[^a-zN:@]"   , ""   },
+				{" +"          , " "  },
 			};
 			for (const auto& x : regex_map) {
-				boost::regex r(x.first);
-				result = boost::regex_replace(result, r, x.second, boost::match_default | boost::format_all);
+				result = boost::regex_replace(
+					result,
+					boost::regex(x.first),
+					x.second,
+					boost::match_default | boost::format_all
+				);
+				// boost::regex_replace(result, boost::regex("[aiueoNq]\:?"), "$0 ", boost::match_default | boost::format_all);
 			}
 			data->result = result;
 
@@ -187,10 +192,10 @@ Handle<Value> kana2voca_sync(const Arguments& args)
 	// Julius の voca 形式へ整形
 	std::string result(romaji.begin(), romaji.end());
 	std::map<std::string, std::string> regex_map = {
-		{"[aiueoNq]:?"     , "$0 "},
-		{"[^aiueoNq]{1,2}" , "$0 "},
-		{"[^a-zN:@]"       , ""   },
-		{"\\s+"            , " "  },
+		{"[aiueoNq]:?" , "$0 "},
+		{"[^aiueoNq]+" , "$0 "},
+		{"[^a-zN:@]"   , ""   },
+		{" +"          , " "  },
 	};
 	for (const auto& x : regex_map) {
 		boost::regex r(x.first);
