@@ -115,7 +115,7 @@ Handle<Value> kana2voca(const Arguments& args)
 
 			uv_mutex_unlock(&m);
 		},
-		[](uv_work_t* req) {
+		(uv_after_work_cb)([](uv_work_t* req, int) {
 			auto data  = static_cast<kana2voca_baton*>( req->data );
 			unique_ptr<uv_work_t>       preq(req);
 			unique_ptr<kana2voca_baton> pdata(data);
@@ -134,7 +134,7 @@ Handle<Value> kana2voca(const Arguments& args)
 			std::string voca_str = pdata->result;
 			Local<Value> argv[2] = { String::New(""), String::New( voca_str.c_str() ) };
 			callback->Call( Context::GetCurrent()->Global(), 2, argv );
-		}
+		})
 	);
 
 	return scope.Close( Undefined() );
